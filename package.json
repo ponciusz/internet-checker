@@ -1,0 +1,18 @@
+{
+  "name": "plusnet-check",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase-admin": "^8.12.1",
+    "is-online": "^8.4.0",
+    "lodash": "^4.17.15",
+    "lowdb": "^1.0.0",
+    "node-cron": "^2.0.3"
+  }
+}
