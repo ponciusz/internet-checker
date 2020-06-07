@@ -1,16 +1,18 @@
-const isOnline = require("is-online");
-var cron = require("node-cron");
-var firebase = require("./firebase");
-var localDb = require("./localDb");
+const isOnline = require('is-online');
+var cron = require('node-cron');
+var firebase = require('./firebase');
 
 let downStart = null;
 
 const checkInternet = async () => {
-  localDb.updateFromLocal();
   const online = await isOnline();
-  const timestamp = Math.round(new Date() / 1000);
+  var now = new Date();
+  const timestamp = Math.round(now / 1000);
+  var month = ('0' + (now.getUTCMonth() + 1)).slice(-2);
+  var day = ('0' + now.getUTCDate()).slice(-2);
+  var year = now.getUTCFullYear();
 
-  console.log({ online, timestamp });
+  console.log({ online, timestamp, day: year + '-' + month + '-' + day });
 
   if (!online && !downStart) {
     console.log(`OMG NO INTERNET START COUNTING SECONDS`);
@@ -20,26 +22,31 @@ const checkInternet = async () => {
   if (downStart && online) {
     console.log(`INTERNET BACK`);
     const downLength = timestamp - downStart;
-
-    let setDoc = firebase.db
-      .collection("downtime")
-      .doc(timestamp.toString())
-      .set({
-        downLength,
-      });
+    let monthRef = firebase.db.collection('months').doc(`${year}-${month}`);
+    const setDoc = monthRef.update(
+      {
+        [`days.${year}-${month}-${day}`]: firebase.admin.firestore.FieldValue.arrayUnion(
+          {
+            timestamp,
+            downLength,
+          }
+        ),
+      },
+      { merge: true }
+    );
 
     setDoc
       .then((res) => {
-        console.log("Sync Done");
+        console.log(
+          `Sync Done for ${year}-${month}-${day} length:${downLength} `
+        );
         downStart = null;
       })
       .catch((err) => {
-        localDb.get("dates").push({ timestamp: downStart, downLength }).write();
-        console.log("err");
+        console.log('err');
       });
   }
-  console.log("------------------------");
 };
-cron.schedule("0,10,20,30,40,50 * * * * *", () => {
+cron.schedule('0,10,20,30,40,50 * * * * *', () => {
   checkInternet();
 });
